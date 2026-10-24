@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: swiftroute
+  datasource:
+    url: ${SUPABASE_DB_URI}
+    driver-class-name: org.postgresql.Driver
+
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      idle-timeout: 30000
+      connection-timeout: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+
+  data:
+    redis:
+      url: ${REDIS_DB_URI}
+      timeout: 5000ms
