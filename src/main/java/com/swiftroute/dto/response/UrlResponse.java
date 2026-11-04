@@ -1,4 +1,10 @@
 package com.swiftroute.dto.response;
 
-public class UrlResponse {
-}
+import java.time.Instant;
+
+public record UrlResponse(
+        String shortCode,
+        String originalUrl,
+        Instant expiresAt,
+        Instant createdAt
+) {}

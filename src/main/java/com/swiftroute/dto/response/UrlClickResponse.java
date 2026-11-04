@@ -1,4 +1,10 @@
 package com.swiftroute.dto.response;
 
-public class UrlClickResponse {
-}
+import java.time.Instant;
+
+public record UrlClickResponse(
+        Instant clickedAt,
+        String referrer,
+        String userAgent,
+        String ipAddress
+) {}
