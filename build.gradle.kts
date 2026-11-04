@@ -25,6 +25,8 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-security-oauth2-client")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
+	implementation("org.mapstruct:mapstruct:1.6.3")
+	implementation("org.mapstruct:mapstruct-processor:1.6.3")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("org.postgresql:postgresql")
 	annotationProcessor("org.projectlombok:lombok")
@@ -38,6 +40,7 @@ dependencies {
 	testCompileOnly("org.projectlombok:lombok")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 	testAnnotationProcessor("org.projectlombok:lombok")
+
 }
 
 tasks.withType<Test> {
