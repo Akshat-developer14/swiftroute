@@ -37,7 +37,7 @@ public class Url extends BaseEntity{
 
     @Setter
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", foreignKey = @ForeignKey(name = "fk_urls_user_id"))
+    @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_urls_user_id"))
     private User user;
 
     public Url(String originalUrl, String shortCode, Instant expiresAt, User user) {

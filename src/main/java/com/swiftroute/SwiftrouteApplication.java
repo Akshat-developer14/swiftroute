@@ -9,10 +9,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 
 @EnableAsync
 @EnableJpaAuditing
-@SpringBootApplication(exclude = {
-		SecurityAutoConfiguration.class,
-		UserDetailsServiceAutoConfiguration.class
-})
+@SpringBootApplication
 public class SwiftrouteApplication {
 
 	public static void main(String[] args) {
