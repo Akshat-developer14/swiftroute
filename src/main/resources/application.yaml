@@ -1,6 +1,8 @@
 spring:
   application:
     name: swiftroute
+  profiles:
+    active: dev
   datasource:
     url: ${SUPABASE_DB_URI}
     driver-class-name: org.postgresql.Driver
@@ -21,3 +23,9 @@ spring:
     redis:
       url: ${REDIS_DB_URI}
       timeout: 5000ms
+
+jwt:
+  # 256 bit base64 encoded secret key
+  secret: ${JWT_SECRET_KEY}
+  access-token-expiration: 900000     # 15 minutes in milliseconds
+  refresh-token-expiration: 604800000 # 7 days in milliseconds

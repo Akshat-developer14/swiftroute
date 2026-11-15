@@ -1,8 +1,12 @@
 package com.swiftroute.service;
 
+import com.swiftroute.dto.helper.AuthTokensDto;
+import com.swiftroute.dto.request.LoginRequest;
 import com.swiftroute.dto.request.RegisterRequest;
+import com.swiftroute.dto.response.AuthResponse;
 import com.swiftroute.dto.response.UserResponse;
 import com.swiftroute.entity.User;
+import com.swiftroute.exception.InvalidCredentialsException;
 import com.swiftroute.exception.UserAlreadyExistsException;
 import com.swiftroute.mapper.UserMapper;
 import com.swiftroute.repository.UserRepository;
@@ -15,11 +19,13 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
+    private final JwtService jwtService;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, UserMapper userMapper) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, UserMapper userMapper, JwtService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.userMapper = userMapper;
+        this.jwtService = jwtService;
     }
 
     @Transactional
@@ -41,5 +47,28 @@ public class AuthService {
         User savedUser = userRepository.save(user);
 
         return userMapper.toResponse(savedUser);
+    }
+
+    public AuthTokensDto login(LoginRequest request) {
+        String email = request.email().toLowerCase().trim();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
+
+        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            throw new InvalidCredentialsException("Invalid email or password");
+        }
+
+        String accessToken = jwtService.generateAccessToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
+
+        UserResponse userResponse = userMapper.toResponse(user);
+        return AuthTokensDto.builder()
+                .accessToken(accessToken)
+                .accessTokenExpirySeconds(jwtService.getAccessTokenExpirationSeconds())
+                .refreshToken(refreshToken)
+                .refreshTokenExpirySeconds(jwtService.getRefreshTokenExpirationSeconds())
+                .user(userResponse)
+                .build();
     }
 }
