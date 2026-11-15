@@ -49,25 +49,17 @@ public class JwtService {
                 .compact();
     }
 
-    public String extractEmail(String token) {
-        return extractAllClaims(token).getSubject();
-    }
-
     public Long extractUserId(String token) {
         return extractAllClaims(token).get("userId", Long.class);
     }
 
-    public boolean isTokenValid(String token, String userEmail) {
+    public boolean validateToken(String token) {
         try {
-            final String email = extractEmail(token);
-            return (email.equals(userEmail)) && !isTokenExpired(token);
+            extractAllClaims(token);
+            return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
-    }
-
-    private boolean isTokenExpired(String token) {
-        return extractAllClaims(token).getExpiration().before(new Date());
     }
 
     private Claims extractAllClaims(String token) {

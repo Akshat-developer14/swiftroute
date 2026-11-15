@@ -71,4 +71,24 @@ public class AuthService {
                 .user(userResponse)
                 .build();
     }
+
+    public String refreshAccessToken (String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new InvalidCredentialsException("Refresh token is missing");
+        }
+
+        if (!jwtService.validateToken(refreshToken)) {
+            throw new InvalidCredentialsException("Invalid or expired refresh token");
+        }
+
+        Long userId = jwtService.extractUserId(refreshToken);
+
+        if (userId == null) {
+            throw new InvalidCredentialsException("Invalid token payload");
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new InvalidCredentialsException("User not found"));
+
+        return jwtService.generateAccessToken(user);
+    }
 }
