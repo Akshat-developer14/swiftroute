@@ -1,5 +1,6 @@
 package com.swiftroute.dto.request;
 
+import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import org.hibernate.validator.constraints.URL;
@@ -14,5 +15,6 @@ public record CreateUrlRequest(
         @Pattern(regexp = "^[a-zA-Z0-9_-]{3,12}$", message = "Custom alias must be 3-12 alphanumeric characters, dashes, or underscores")
         String customAlias,
 
+        @Future(message = "Expiration date must be in the future")
         Instant expiresAt
 ) {}
