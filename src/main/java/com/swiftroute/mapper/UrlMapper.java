@@ -6,6 +6,8 @@ import com.swiftroute.entity.Url;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
+import java.util.List;
+
 
 @Mapper(componentModel = "spring")
 public interface UrlMapper {
@@ -18,4 +20,6 @@ public interface UrlMapper {
     @Mapping(target = "user", ignore = true)
     @Mapping(target = "shortCode", ignore = true)
     Url toEntity(CreateUrlRequest request);
+
+    List<UrlResponse> toResponseList(List<Url> urls);
 }

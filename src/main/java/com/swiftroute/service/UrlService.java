@@ -2,31 +2,90 @@ package com.swiftroute.service;
 
 import com.swiftroute.dto.helper.ClickMetadata;
 import com.swiftroute.dto.request.CreateUrlRequest;
+import com.swiftroute.dto.response.UrlAnalyticsResponse;
+import com.swiftroute.dto.response.UrlClickResponse;
 import com.swiftroute.dto.response.UrlResponse;
 import com.swiftroute.entity.Url;
+import com.swiftroute.entity.UrlClick;
 import com.swiftroute.entity.User;
 import com.swiftroute.exception.AliasAlreadyTakenException;
 import com.swiftroute.exception.UrlExpiredException;
 import com.swiftroute.exception.UrlNotFoundException;
+import com.swiftroute.mapper.UrlClickMapper;
 import com.swiftroute.mapper.UrlMapper;
+import com.swiftroute.repository.UrlClickRepository;
 import com.swiftroute.repository.UrlRepository;
 import com.swiftroute.util.Base62;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
 
 @Service
 public class UrlService {
     private final UrlRepository urlRepository;
     private final UrlClickService urlClickService;
     private final UrlMapper urlMapper;
+    private final UrlClickMapper urlClickMapper;
+    private final UrlClickRepository urlClickRepository;
 
-    public UrlService(UrlRepository urlRepository, UrlClickService urlClickService, UrlMapper urlMapper) {
+    public UrlService(UrlRepository urlRepository, UrlClickService urlClickService, UrlMapper urlMapper, UrlClickMapper urlClickMapper, UrlClickRepository urlClickRepository) {
         this.urlRepository = urlRepository;
         this.urlClickService = urlClickService;
         this.urlMapper = urlMapper;
+        this.urlClickMapper = urlClickMapper;
+        this.urlClickRepository = urlClickRepository;
+    }
+
+    public UrlAnalyticsResponse getUrlAnalytics(String shortCode, User user) {
+        Url url = urlRepository.findByShortCode(shortCode)
+                .orElseThrow(() -> new UrlNotFoundException("Short URL not found: " + shortCode));
+
+        if (!url.getUser().getId().equals(user.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("Access Denied");
+        }
+
+        long totalClicks = urlClickRepository.countByUrlId(url.getId());
+
+        Pageable top10 = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "clickedAt"));
+        List<UrlClick> recentClicks = urlClickRepository.findByUrlId(url.getId(), top10).getContent();
+
+        List<UrlClickResponse> clickResponses = urlClickMapper.toResponseList(recentClicks);
+
+        return new UrlAnalyticsResponse(
+                url.getShortCode(),
+                url.getOriginalUrl(),
+                totalClicks,
+                url.getCreatedAt(),
+                url.getExpiresAt(),
+                clickResponses
+        );
+    }
+
+    public List<UrlResponse> getMyUrls(User user) {
+        List<Url> userUrls = urlRepository.findByUserId(user.getId());
+        return urlMapper.toResponseList(userUrls);
+    }
+
+    @Transactional
+    public void deleteUrl(String shortCode, User user) {
+        Url url = urlRepository.findByShortCode(shortCode)
+                .orElseThrow(() -> new UrlNotFoundException("Short URL not found: " + shortCode));
+
+        if (!url.getUser().getId().equals(user.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("Access Denied");
+        }
+
+        urlClickRepository.deleteByUrlId(url.getId());
+        urlRepository.delete(url);
     }
 
     @Transactional
