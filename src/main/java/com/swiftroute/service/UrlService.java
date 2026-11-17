@@ -1,5 +1,6 @@
 package com.swiftroute.service;
 
+import com.swiftroute.dto.cache.CachedUrl;
 import com.swiftroute.dto.helper.ClickMetadata;
 import com.swiftroute.dto.request.CreateUrlRequest;
 import com.swiftroute.dto.response.UrlAnalyticsResponse;
@@ -28,6 +29,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UrlService {
@@ -36,13 +38,15 @@ public class UrlService {
     private final UrlMapper urlMapper;
     private final UrlClickMapper urlClickMapper;
     private final UrlClickRepository urlClickRepository;
+    private final UrlCacheService urlCacheService;
 
-    public UrlService(UrlRepository urlRepository, UrlClickService urlClickService, UrlMapper urlMapper, UrlClickMapper urlClickMapper, UrlClickRepository urlClickRepository) {
+    public UrlService(UrlRepository urlRepository, UrlClickService urlClickService, UrlMapper urlMapper, UrlClickMapper urlClickMapper, UrlClickRepository urlClickRepository, UrlCacheService urlCacheService) {
         this.urlRepository = urlRepository;
         this.urlClickService = urlClickService;
         this.urlMapper = urlMapper;
         this.urlClickMapper = urlClickMapper;
         this.urlClickRepository = urlClickRepository;
+        this.urlCacheService = urlCacheService;
     }
 
     public UrlAnalyticsResponse getUrlAnalytics(String shortCode, User user) {
@@ -86,6 +90,8 @@ public class UrlService {
 
         urlClickRepository.deleteByUrlId(url.getId());
         urlRepository.delete(url);
+
+        urlCacheService.evict(shortCode);
     }
 
     @Transactional
@@ -111,6 +117,11 @@ public class UrlService {
         );
 
         Url savedUrl = urlRepository.save(url);
+
+        urlCacheService.put(
+                savedUrl.getShortCode(),
+                new CachedUrl(savedUrl.getId(), savedUrl.getOriginalUrl(), savedUrl.getExpiresAt())
+        );
         return urlMapper.toResponse(savedUrl);
     }
 
@@ -118,13 +129,37 @@ public class UrlService {
             String shortCode,
             HttpServletRequest request
     ) {
+        Optional<CachedUrl> cached = urlCacheService.get(shortCode);
+        if(cached.isPresent()) {
+            CachedUrl cachedUrl = cached.get();
+            validateExpiry(cachedUrl.expiresAt());
+
+            Url urlProxy = urlRepository.getReferenceById(cachedUrl.id());
+            logClickAsync(urlProxy, request);
+
+            return cachedUrl.originalUrl();
+        }
         Url url = urlRepository.findByShortCode(shortCode)
                 .orElseThrow(() -> new UrlNotFoundException("Short URL not found: " + shortCode));
 
-        if (url.getExpiresAt() != null && url.getExpiresAt().isBefore(Instant.now())) {
-            throw new UrlExpiredException("This link expired on: " + url.getExpiresAt());
-        }
+        validateExpiry(url.getExpiresAt());
 
+        urlCacheService.put(
+                url.getShortCode(),
+                new CachedUrl(url.getId(), url.getOriginalUrl(), url.getExpiresAt())
+        );
+        logClickAsync(url, request);
+
+        return url.getOriginalUrl();
+    }
+
+    private void validateExpiry(Instant expiresAt) {
+        if (expiresAt != null && expiresAt.isBefore(Instant.now())) {
+            throw new UrlExpiredException("This link expired on: " + expiresAt);
+        }
+    }
+
+    private void logClickAsync(Url url, HttpServletRequest request) {
         ClickMetadata metadata = ClickMetadata.builder()
                 .url(url)
                 .ipAddress(extractClientIp(request))
@@ -132,8 +167,6 @@ public class UrlService {
                 .referrer(request.getHeader("Referer"))
                 .build();
         urlClickService.recordClick(metadata);
-
-        return url.getOriginalUrl();
     }
 
     private String extractClientIp(HttpServletRequest request) {
