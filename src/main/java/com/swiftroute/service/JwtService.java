@@ -26,6 +26,8 @@ public class JwtService {
     @Value("${jwt.refresh-token-expiration}")
     private long refreshTokenExpiration;
 
+    // ----- Public Methods -----
+
     public String generateAccessToken(User user) {
         Map<String, Object> extraClaims = new HashMap<>();
         extraClaims.put("userId", user.getId());
@@ -37,16 +39,6 @@ public class JwtService {
         Map<String, Object> extraClaims = new HashMap<>();
         extraClaims.put("userId", user.getId());
         return buildToken(extraClaims, user.getEmail(), refreshTokenExpiration);
-    }
-
-    private String buildToken(Map<String, Object> extraClaims, String subject, long expiration) {
-        return Jwts.builder()
-                .claims(extraClaims) // Adding details of the user
-                .subject(subject) // Identifying who the token belongs to (Here using email)
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(getSigningKey())
-                .compact();
     }
 
     public Long extractUserId(String token) {
@@ -62,6 +54,26 @@ public class JwtService {
         }
     }
 
+    public long getAccessTokenExpirationSeconds() {
+        return accessTokenExpiration / 1000;
+    }
+
+    public long getRefreshTokenExpirationSeconds() {
+        return refreshTokenExpiration / 1000;
+    }
+
+    // ----- Private Methods -----
+
+    private String buildToken(Map<String, Object> extraClaims, String subject, long expiration) {
+        return Jwts.builder()
+                .claims(extraClaims) // Adding details of the user
+                .subject(subject) // Identifying who the token belongs to (Here using email)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(getSigningKey())
+                .compact();
+    }
+
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getSigningKey())
@@ -73,13 +85,5 @@ public class JwtService {
     private SecretKey getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
-    }
-
-    public long getAccessTokenExpirationSeconds() {
-        return accessTokenExpiration / 1000;
-    }
-
-    public long getRefreshTokenExpirationSeconds() {
-        return refreshTokenExpiration / 1000;
     }
 }
