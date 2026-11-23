@@ -20,6 +20,8 @@ public class UrlCacheService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
 
+    // -- Public Method --
+
     public Optional<CachedUrl> get(String shortCode) {
         try {
             Object value = redisTemplate.opsForValue().get(KEY_PREFIX + shortCode);
@@ -52,6 +54,8 @@ public class UrlCacheService {
             log.warn("Redis evict failure for shortCode {}: {}", shortCode, e.getMessage());
         }
     }
+
+    // -- Private Method --
 
     private Duration calculateTtl(Instant expiresAt) {
         if (expiresAt == null) {

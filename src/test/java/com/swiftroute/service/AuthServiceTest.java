@@ -73,7 +73,7 @@ public class AuthServiceTest {
     }
 
     @Test
-    void shouldThrowUserAlreadyExistsExceptionWhenEmailIsTaken() {
+    void shouldThrowUserAlreadyExistsExceptionInRegisterWhenEmailIsTaken() {
         RegisterRequest request = new RegisterRequest("Akshat", "akshat@example.com", "rawPassword");
         when(userRepository.existsByEmail("akshat@example.com")).thenReturn(true);
 
@@ -110,14 +110,14 @@ public class AuthServiceTest {
     }
 
     @Test
-    void shouldThrowInvalidCredentialsExceptionWhenEmailNotFound() {
+    void shouldThrowInvalidCredentialsExceptionInLoginWhenEmailNotFound() {
         LoginRequest request = new LoginRequest("akshat@email.com", "rawPassword");
         when(userRepository.findByEmail("akshat@email.com")).thenReturn(Optional.empty());
         assertThrows(InvalidCredentialsException.class, () -> authService.login(request));
     }
 
     @Test
-    void shouldThrowInvalidCredentialsExceptionWhenPasswordIsWrong() {
+    void shouldThrowInvalidCredentialsExceptionInLoginWhenPasswordIsWrong() {
         LoginRequest request = new LoginRequest("akshat@email.com", "wrongPassword");
         User user = new User("Akshat Sharma", "akshat@email.com", "hashedPassword");
         when(userRepository.findByEmail("akshat@email.com")).thenReturn(Optional.of(user));
