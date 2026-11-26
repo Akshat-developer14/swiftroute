@@ -3,7 +3,6 @@ package com.swiftroute.service;
 import com.swiftroute.dto.helper.AuthTokensDto;
 import com.swiftroute.dto.request.LoginRequest;
 import com.swiftroute.dto.request.RegisterRequest;
-import com.swiftroute.dto.response.AuthResponse;
 import com.swiftroute.dto.response.UserResponse;
 import com.swiftroute.entity.User;
 import com.swiftroute.exception.InvalidCredentialsException;
