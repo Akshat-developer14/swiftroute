@@ -1,8 +1,11 @@
+server:
+  port: ${PORT:8080}
+
 spring:
   application:
     name: swiftroute
   profiles:
-    active: dev
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   datasource:
     url: ${SUPABASE_DB_URI}
     driver-class-name: org.postgresql.Driver
